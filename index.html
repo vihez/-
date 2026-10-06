@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>БОМЖ: Путь к VEXUS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ====== ФОНОВЫЕ СЦЕНЫ ====== -->
+  <div id="scenes" class="breathing">
+    <img id="scene-1" class="scene active" src="assets/scene_1_lying.png" alt="Помойка">
+    <img id="scene-2" class="scene" src="assets/scene_2_sit.png" alt="Встаём">
+    <img id="scene-3" class="scene" src="assets/scene_3_stand.png" alt="Улица (бомж)">
+    <img id="scene-3-carwash" class="scene" src="assets/scene_3_carwash.png" alt="Мойка">
+    <!-- Картинки ветки программиста: пока их нет на диске —
+         прячем битую иконку, остаётся тёмный фон игры -->
+    <img id="scene-4-freelance" class="scene" src="assets/bg_freelance.png" alt="Комната, ноутбук" onerror="this.style.display='none'">
+    <img id="scene-5-office" class="scene" src="assets/bg_office.png" alt="Офис" onerror="this.style.display='none'">
+    <img id="scene-6-product" class="scene" src="assets/bg_product.png" alt="Свой продукт" onerror="this.style.display='none'">
+  </div>
+
+  <div id="fog"></div>
+  <canvas id="rain-canvas"></canvas>
+  <div id="screen-flash"></div>
+  <div id="combo-display">x1.0</div>
+
+  <div id="goal-panel">
+    <div class="goal-title" id="goal-title">НАКОПИ 500 ₽</div>
+    <div class="goal-progress-bg">
+      <div class="goal-progress-fill" id="goal-progress"></div>
+    </div>
+    <div class="goal-hint" id="goal-hint">0 / 500 ₽</div>
+  </div>
+
+  <!-- МИНИ-ИГРА МУСОР -->
+  <div id="mg-scene">
+    <div class="mg-top">
+      <div class="mg-timer" id="mg-timer">15</div>
+      <div class="mg-score">СОБРАНО: <span id="bag-count">0</span></div>
+    </div>
+    <div id="mg-field">
+      <div id="bag-counter">0</div>
+      <div id="hands">
+        <img id="hands-img" src="assets/hands_empty.png" alt="Руки">
+      </div>
+    </div>
+  </div>
+
+  <!-- МИНИ-ИГРА АВТОМОЙКА -->
+  <div id="mg-carwash">
+    <div class="mg-top">
+      <div class="mg-timer" id="car-timer">30</div>
+      <div class="mg-score">ПОМЫТО МАШИН: <span id="car-count">0</span></div>
+    </div>
+    <div id="car-field">
+      <div class="car-hint">ВОДИ ГУБКОЙ ПО МАШИНЕ!</div>
+      <div id="sponge-cursor"><img src="assets/sponge_washing.png" alt="Губка"></div>
+      <div id="car-container">
+        <img id="car-clean" src="assets/car_1_clean.png" alt="Чистая машина">
+        <img id="car-dirty" src="assets/car_1_dirty.png" alt="Грязь">
+      </div>
+    </div>
+  </div>
+
+  <!-- МИНИ-ИГРА ФРИЛАНС -->
+  <div id="mg-freelance">
+    <div class="mg-top">
+      <div class="mg-timer" id="fl-timer">20</div>
+      <div class="mg-score">ЗАКАЗ: <span id="fl-order">Телеграм-бот</span></div>
+    </div>
+    <div id="fl-field">
+      <div class="fl-hint">ТАПАЙ ПО ЭКРАНУ — ПИШЕШЬ КОД!</div>
+      <div id="fl-screen">
+        <div id="fl-code"></div>
+        <div class="code-cursor"></div>
+      </div>
+      <div class="fl-progress"><div class="fl-progress-fill" id="fl-progress"></div></div>
+      <div class="fl-count"><span id="fl-typed">0</span> / <span id="fl-need">12</span> СЛОВ</div>
+    </div>
+  </div>
+
+  <!-- МИНИ-ИГРА ОФИС -->
+  <div id="mg-office">
+    <div class="mg-top">
+      <div class="mg-timer" id="of-timer">30</div>
+      <div class="mg-score">БАГОВ ПОФИКШЕНО: <span id="of-count">0</span></div>
+    </div>
+    <div id="of-field">
+      <div class="of-hint">ТАПАЙ ПО БАГАМ — ЧИНИ КОД!</div>
+      <div id="of-screen"><div id="of-code"></div></div>
+    </div>
+  </div>
+
+  <!-- HUD ПРОДУКТА -->
+  <div id="product-panel"></div>
+
+  <!-- ЛАВКА -->
+  <div id="shop-scene">
+    <div class="shop-title" id="shop-title-text">ПРИЁМ МУСОРА</div>
+    <div id="shop-list"></div>
+    <div class="shop-total">ИТОГО: <span id="shop-total">0</span> ₽</div>
+    <div class="shop-buttons">
+      <button class="btn" onclick="confirmSale()" onmousedown="soundTap()">ПРОДАТЬ</button>
+    </div>
+  </div>
+
+  <!-- УЛУЧШЕНИЯ -->
+  <div id="upgrades-scene">
+    <div class="upgrades-title">⚙️ УЛУЧШЕНИЯ</div>
+    <div class="upgrades-balance" id="upgrades-balance">0 ₽</div>
+    <div class="upgrades-list" id="upgrades-list"></div>
+    <button class="btn btn-cyan" onclick="closeUpgrades()" onmousedown="soundTap()">НАЗАД</button>
+  </div>
+
+  <!-- ЗАВЕРШЕНИЕ ЦЕЛИ -->
+  <div id="goal-complete">
+    <div class="goal-complete-box">
+      <div class="goal-complete-icon">🏆</div>
+      <div class="goal-complete-title">ЦЕЛЬ ДОСТИГНУТА!</div>
+      <div class="goal-complete-text" id="goal-complete-text">Ты накопил деньги</div>
+      <div class="goal-complete-reward" id="goal-complete-reward">+0 ₽ БОНУС</div>
+      <button class="btn" onclick="closeGoalComplete()" onmousedown="soundTap()">ПРОДОЛЖИТЬ</button>
+    </div>
+  </div>
+
+  <!-- ЭКРАН ДИРЕКТОРА -->
+  <div id="director-scene">
+    <div class="director-bg" id="director-bg"></div>
+    <div class="director-info">
+      <div class="director-title">ДИРЕКТОР АВТОМОЙКИ</div>
+      <div class="director-text" id="director-text">«Хорошо поработал! Вот твоя зарплата.»</div>
+      <div class="director-total">
+        ЗАРПЛАТА: <span id="director-total">0</span> ₽
+      </div>
+      <button class="btn" id="director-btn" onclick="takeMoney()" onmousedown="soundTap()">🖐️ ЗАБРАТЬ</button>
+    </div>
+  </div>
+
+  <!-- ЭКРАН ЗАКАЗЧИКА / ТИМЛИДА -->
+  <div id="boss-scene">
+    <div class="boss-bg" id="boss-bg"></div>
+    <div class="boss-info">
+      <div class="boss-title" id="boss-title">ЗАКАЗЧИК</div>
+      <div class="boss-text" id="boss-text">«Норм сделал!»</div>
+      <div class="boss-total">ОПЛАТА: <span id="boss-total">0</span> ₽</div>
+      <button class="btn" id="boss-btn" onclick="bossTake()" onmousedown="soundTap()">🖐️ ЗАБРАТЬ</button>
+    </div>
+  </div>
+
+  <!-- ЗАСТАВКА: ЕДЕМ НА МОЙКУ -->
+  <div id="cutscene">
+    <div id="cutscene-shake">
+      <img id="cutscene-img" src="assets/cutscene_drive.png" alt="" onerror="this.style.display='none'">
+    </div>
+    <button class="btn btn-gray" id="cutscene-skip" onclick="skipCutscene()">ПРОПУСТИТЬ ▶▶</button>
+  </div>
+
+  <div id="ui"></div>
+
+  <script src="game.js"></script>
+</body>
+</html>

@@ -1,0 +1,810 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #030509;
+  color: #f0f5ff;
+  font-family: 'Press Start 2P', monospace;
+  min-height: 100vh;
+  overflow: hidden;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ====== ДЫХАНИЕ ====== */
+@keyframes sceneBreathe {
+  0%   { transform: translateY(0); }
+  50%  { transform: translateY(-12px); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes neonFlicker {
+  0%, 100% { opacity: 1; }
+  48% { opacity: 0.98; }
+  49% { opacity: 0.95; }
+  50% { opacity: 1; }
+  93% { opacity: 0.97; }
+  94% { opacity: 1; }
+  95% { opacity: 1; }
+}
+
+/* ====== ФОНОВЫЕ СЦЕНЫ ====== */
+#scenes {
+  position: fixed;
+  inset: -30px;
+  z-index: 0;
+  transition: opacity 0.8s ease;
+  background: #030509;
+}
+
+#scenes.hidden { opacity: 0; }
+
+.scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: pixelated;
+  transition: opacity 1.2s ease-in-out;
+  opacity: 0;
+}
+
+/* ✅ Все сцены дышат */
+.scene.active {
+  opacity: 1;
+  animation: sceneBreathe 4s ease-in-out infinite;
+}
+
+#fog {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(to top, rgba(124, 58, 237, 0.15) 0%, rgba(124, 58, 237, 0.05) 30%, transparent 60%);
+  animation: fogMove 20s ease-in-out infinite alternate;
+}
+
+@keyframes fogMove {
+  0% { transform: translateX(-2%); opacity: 0.8; }
+  100% { transform: translateX(2%); opacity: 1; }
+}
+
+#rain-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 26; }
+
+/* ====== ДРОН ====== */
+.drone {
+  position: absolute; width: 70px; height: 70px; cursor: pointer; z-index: 6; pointer-events: auto;
+  image-rendering: pixelated; background-image: url('assets/drone.png'); background-size: contain;
+  background-repeat: no-repeat; background-position: center; filter: drop-shadow(0 0 12px rgba(0, 243, 255, 0.7));
+  transition: filter 0.15s; left: 85%; animation: flyLeft linear forwards, droneFloat 2.5s ease-in-out infinite;
+}
+.drone:hover { filter: drop-shadow(0 0 20px rgba(255, 204, 0, 0.9)); }
+.drone:active { transform: scale(0.9); }
+.drone.thanks { animation: thanksPop 0.5s forwards !important; }
+@keyframes flyLeft { 0% { left: 85%; opacity: 0; } 10% { opacity: 1; } 75% { opacity: 1; } 100% { left: 58%; opacity: 0; } }
+@keyframes droneFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes thanksPop { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.5) translateY(-60px); opacity: 0; } }
+
+/* ====== ПАНЕЛЬ ЦЕЛИ ====== */
+#goal-panel {
+  position: fixed; top: 15px; left: 50%; transform: translateX(-50%); z-index: 55; background: rgba(3, 5, 9, 0.9);
+  border: 2px solid #00f3ff; padding: 10px 18px; min-width: 260px; max-width: 90%; text-align: center; display: none;
+}
+.goal-title { font-size: 10px; color: #00f3ff; text-shadow: 2px 2px 0 #000, 0 0 10px #00f3ff; margin-bottom: 8px; }
+.goal-progress-bg { width: 100%; height: 10px; background: rgba(255, 255, 255, 0.1); border: 2px solid #7c3aed; overflow: hidden; }
+.goal-progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #7c3aed, #00f3ff); transition: width 0.4s ease; }
+.goal-hint { font-size: 8px; color: #b0b0d0; margin-top: 6px; }
+
+/* ====== МИНИ-ИГРЫ ====== */
+#mg-scene, #mg-carwash {
+  position: fixed; inset: 0; z-index: 20; display: none; flex-direction: column;
+  background-size: cover; background-position: center; image-rendering: pixelated;
+  opacity: 0; transition: opacity 0.8s ease;
+}
+
+/* ✅ Мусорка — фон статичен */
+#mg-scene { 
+  background-image: url('assets/bg_trash.png');
+}
+/* Убираем анимацию с фона, чтобы мусор не прыгал */
+#mg-scene.visible {
+  /* animation: sceneBreathe 4s ease-in-out infinite; */
+}
+
+/* ❌ Мойка — НЕ дышит (когда моешь машину) */
+#mg-carwash { 
+  background-image: url('assets/bg_carwash.png');
+}
+
+#mg-scene.active, #mg-carwash.active { display: flex; }
+#mg-scene.visible, #mg-carwash.visible { opacity: 1; }
+
+.mg-top { display: flex; justify-content: space-between; padding: 20px 25px; background: rgba(0, 0, 0, 0.7); border-bottom: 3px solid #7c3aed; z-index: 25; }
+.mg-timer { font-size: 20px; color: #ff4444; text-shadow: 3px 3px 0 #000; }
+.mg-score { font-size: 16px; color: #ffcc00; text-shadow: 3px 3px 0 #000; }
+
+#mg-field { flex: 1; position: relative; overflow: hidden; }
+
+#hands {
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 900px;
+  z-index: 15;
+  pointer-events: none;
+  animation: handsBreathe 3.5s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+@keyframes handsBreathe {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50%      { transform: translateX(-50%) translateY(-8px); }
+}
+
+#hands-img { width: 100%; height: auto; image-rendering: pixelated; display: block; }
+
+#bag-counter {
+  position: absolute;
+  bottom: 22%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 32px;
+  color: #ffcc00;
+  text-shadow: 4px 4px 0 #000;
+  z-index: 16;
+  pointer-events: none;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+#bag-counter.bump {
+  transform: translateX(-50%) scale(1.4);
+  color: #fff;
+}
+
+.trash {
+  position: absolute;
+  cursor: pointer;
+  animation: trashPop 0.3s ease-out;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.6, 1), opacity 0.3s;
+  image-rendering: pixelated;
+  z-index: 12;
+}
+.trash img {
+  width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated;
+  pointer-events: none;
+}
+.trash:active { transform: scale(0.85); }
+@keyframes trashPop { 0% { transform: scale(0) rotate(-20deg); opacity: 0; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+
+.trash.rare img {
+  filter: sepia(1) saturate(5) hue-rotate(5deg) brightness(1.3);
+}
+
+/* ====== АВТОМОЙКА ====== */
+#car-field {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+  cursor: none;
+}
+
+#car-container {
+  position: absolute;
+  left: 50%;
+  bottom: 22%;
+  width: 50%;
+  max-width: 550px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(-50%, 0, 0) translateX(75%);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transition: filter 0.35s ease-out;
+}
+
+#car-container.driving-in {
+  opacity: 1;
+  animation: carDriveIn 1.6s ease-out forwards;
+}
+
+#car-container.driving-out {
+  opacity: 1;
+  animation: carDriveOut 1.4s ease-in forwards;
+}
+
+#car-container.shine {
+  filter: brightness(1.5) drop-shadow(0 0 40px #ffcc00) drop-shadow(0 0 80px #ffaa00);
+}
+
+@keyframes carDriveIn {
+  0%   { transform: translate3d(-50%, 0, 0) translateX(75%); opacity: 0; }
+  25%  { opacity: 1; }
+  100% { transform: translate3d(-50%, 0, 0) translateX(0); opacity: 1; }
+}
+
+@keyframes carDriveOut {
+  0%   { transform: translate3d(-50%, 0, 0) translateX(0); opacity: 1; }
+  50%  { transform: translate3d(-50%, 0, 0) translateX(-45%); opacity: 0.8; }
+  60%  { transform: translate3d(-50%, 0, 0) translateX(-55%); opacity: 0; }
+  100% { transform: translate3d(-50%, 0, 0) translateX(-100%); opacity: 0; }
+}
+
+#car-clean, #car-dirty {
+  width: 100%;
+  display: block;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+#car-dirty { position: absolute; top: 0; left: 0; }
+
+.car-hint {
+  position: absolute;
+  top: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #ffcc00;
+  text-shadow: 2px 2px 0 #000, 0 0 15px rgba(255, 204, 0, 0.9), 0 0 30px rgba(255, 204, 0, 0.5);
+  font-size: 12px;
+  pointer-events: none;
+  z-index: 5;
+  animation: hintPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes hintPulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.75; }
+}
+
+#car-container.shine::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  left: 25%;
+  width: 56px;
+  height: 56px;
+  background-image: url('assets/sparkle.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  animation: goldSparkle 1.2s ease-out;
+  pointer-events: none;
+}
+
+#car-container.shine::after {
+  content: '';
+  position: absolute;
+  top: -30px;
+  left: 65%;
+  width: 64px;
+  height: 64px;
+  background-image: url('assets/sparkle.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  animation: goldSparkle 1.2s ease-out 0.15s;
+  pointer-events: none;
+}
+
+@keyframes goldSparkle {
+  0%   { opacity: 0; transform: scale(0) rotate(0deg); }
+  35%  { opacity: 1; transform: scale(1.4) rotate(20deg); }
+  70%  { opacity: 0.9; transform: scale(1.2) rotate(-10deg); }
+  100% { opacity: 0; transform: scale(0.5) translateY(-60px) rotate(30deg); }
+}
+
+/* ====== ГУБКА ====== */
+#sponge-cursor {
+  position: fixed;
+  width: 100px;
+  height: 100px;
+  pointer-events: none;
+  z-index: 9999;
+  display: none;
+  transform: translate(-50%, -50%);
+  transition: transform 0.08s ease;
+  left: -300px;
+  top: -300px;
+}
+
+#sponge-cursor img { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+
+#sponge-cursor.active { display: block; }
+
+#sponge-cursor.washing {
+  transform: translate(-50%, -50%) scale(1.1) rotate(-8deg);
+}
+
+/* ====== БРЫЗГИ И ПЕНА ====== */
+.splash {
+  position: fixed;
+  width: 40px;
+  height: 40px;
+  pointer-events: none;
+  z-index: 9998;
+  animation: splashFly 0.5s ease-out forwards;
+}
+.splash img { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+@keyframes splashFly {
+  0%   { opacity: 1; transform: scale(0.5); }
+  100% { opacity: 0; transform: scale(1.5) translateY(-30px); }
+}
+
+.foam-bubble {
+  position: fixed;
+  width: 80px;
+  height: 80px;
+  pointer-events: none;
+  z-index: 9997;
+  animation: foamFloat 0.9s ease-out forwards;
+  opacity: 0.9;
+}
+.foam-bubble img { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+@keyframes foamFloat {
+  0%   { opacity: 0.9; transform: scale(0.5); }
+  50%  { opacity: 0.8; transform: scale(1) translateY(-20px); }
+  100% { opacity: 0; transform: scale(1.2) translateY(-60px); }
+}
+
+/* ====== ЛАВКА ====== */
+#shop-scene {
+  position: fixed; inset: 0; z-index: 30; display: none; flex-direction: column; align-items: center; justify-content: flex-end;
+  padding: 20px 20px 40px; background: #030509; opacity: 0; transition: opacity 0.8s ease; overflow: hidden;
+}
+#shop-scene.active { display: flex; }
+#shop-scene.visible { opacity: 1; }
+
+#shop-scene::before {
+  content: ''; position: absolute; inset: -30px; background-image: url('assets/bg_shop.png'); background-size: cover;
+  background-position: center; image-rendering: pixelated; z-index: 0;
+}
+#shop-scene.liked::before { background-image: url('assets/bg_shop_like.png'); }
+
+/* ✅ Лавка дышит */
+#shop-scene.visible::before {
+  animation: sceneBreathe 4s ease-in-out infinite;
+}
+
+.shop-title { font-size: 10px; color: #00f3ff; margin-bottom: 8px; background: rgba(3, 5, 9, 0.85); padding: 6px 16px; border: 2px solid #00f3ff; position: relative; z-index: 32; }
+#shop-list { background: rgba(3, 5, 9, 0.85); border: 2px solid #7c3aed; padding: 10px 20px; font-size: 9px; line-height: 2; color: #f0f5ff; max-height: 25vh; overflow-y: auto; margin-bottom: 8px; min-width: 260px; position: relative; z-index: 32; }
+#shop-list .row { display: flex; justify-content: space-between; gap: 20px; padding: 2px 0; }
+#shop-list .row .price { color: #ffcc00; }
+.shop-total { font-size: 14px; color: #ffcc00; margin-bottom: 15px; background: rgba(3, 5, 9, 0.85); padding: 8px 20px; border: 2px solid #ffcc00; position: relative; z-index: 32; }
+.shop-buttons { display: flex; gap: 12px; position: relative; z-index: 32; }
+
+.seller-bubble {
+  position: fixed;
+  top: 30%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(3, 5, 9, 0.95);
+  color: #ffcc00;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 14px;
+  padding: 14px 24px;
+  border: 3px solid #ffcc00;
+  border-radius: 14px;
+  z-index: 9998;
+  pointer-events: none;
+  text-align: center;
+  animation: sellerSpeech 2.2s ease-out forwards;
+  white-space: nowrap;
+}
+@keyframes sellerSpeech {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(20px) scale(0.8); }
+  15%  { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.05); }
+  25%  { transform: translateX(-50%) translateY(0) scale(1); }
+  80%  { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-20px) scale(0.9); }
+}
+
+/* ====== НИЖНЯЯ ПАНЕЛЬ ====== */
+#ui {
+  position: fixed; bottom: 0; left: 0; right: 0; padding: 20px 20px 30px; display: flex; flex-direction: column;
+  align-items: center; gap: 15px; z-index: 50; background: linear-gradient(to top, rgba(3, 5, 9, 0.95) 0%, rgba(3, 5, 9, 0.6) 60%, transparent 100%);
+}
+h1 { font-size: 14px; color: #fff; text-shadow: 3px 3px 0 #7c3aed; margin-bottom: 5px; line-height: 1.5; }
+p { font-size: 9px; color: #b0b0d0; margin-bottom: 15px; }
+.balance { font-size: 20px; color: #ffcc00; text-shadow: 3px 3px 0 #000; letter-spacing: 2px; }
+
+/* ====== КНОПКИ ====== */
+.btn {
+  font-family: 'Press Start 2P', monospace; font-size: 10px; padding: 16px 30px; background: #7c3aed; color: #fff;
+  border: 3px solid #fff; border-radius: 14px; cursor: pointer; text-transform: uppercase; box-shadow: 4px 4px 0 #000; transition: all 0.12s ease;
+}
+.btn:hover { background: #9333ea; transform: translate(-2px, -2px); box-shadow: 6px 6px 0 #000; }
+.btn:active { transform: translate(2px, 2px) scale(0.96); box-shadow: 2px 2px 0 #000; }
+.btn-cyan { background: #00f3ff; color: #000; box-shadow: 4px 4px 0 #000; }
+.btn-cyan:hover { background: #33f6ff; box-shadow: 6px 6px 0 #000; }
+.btn-gray { font-size: 8px; padding: 10px 18px; background: #333; color: #b0b0d0; border: 2px solid #555; }
+.btn-cancel { font-size: 8px; background: #4a1a1a; color: #ff8888; border: 3px solid #ff4444; }
+
+/* ====== ЭФФЕКТЫ ====== */
+.float-text { position: fixed; font-size: 14px; color: #ffcc00; pointer-events: none; animation: floatUp 0.8s forwards; z-index: 999; transform: translate(-50%, -50%); text-shadow: 2px 2px 0 #000; }
+@keyframes floatUp { 0% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -150%) scale(1.3); } }
+
+.flying-coin { position: fixed; width: 40px; height: 40px; pointer-events: none; z-index: 9999; animation: coinFly 1.4s forwards; }
+.flying-coin svg { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+@keyframes coinFly {
+  0%   { opacity: 1; transform: translate(0, 0) scale(0.6) rotate(0deg); }
+  20%  { opacity: 1; transform: translate(0, -30px) scale(1.1) rotate(90deg); }
+  60%  { opacity: 1; transform: translate(var(--dx, 20px), -140px) scale(1) rotate(400deg); }
+  100% { opacity: 0; transform: translate(var(--dx, 20px), -280px) scale(0.8) rotate(720deg); }
+}
+
+.flying-bill {
+  position: fixed;
+  font-size: 44px;
+  pointer-events: none;
+  z-index: 9999;
+  animation: billFly 1.6s cubic-bezier(0.2, 0.6, 0.4, 1) forwards;
+  filter: drop-shadow(0 0 10px rgba(0, 255, 100, 0.8));
+}
+
+@keyframes billFly {
+  0%   { opacity: 1; transform: translate(0, 0) scale(0.5) rotate(0deg); }
+  20%  { opacity: 1; transform: translate(0, -40px) scale(1.1) rotate(60deg); }
+  60%  { opacity: 1; transform: translate(var(--dx, 20px), -180px) scale(1) rotate(240deg); }
+  100% { opacity: 0; transform: translate(var(--dx, 20px), -350px) scale(0.7) rotate(540deg); }
+}
+
+#combo-display { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 40px; color: #ffcc00; text-shadow: 4px 4px 0 #000; z-index: 100; opacity: 0; pointer-events: none; transition: 0.2s; }
+#combo-display.show { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+#screen-flash { position: fixed; inset: 0; pointer-events: none; z-index: 90; background: #fff; opacity: 0; transition: opacity 0.08s; }
+#screen-flash.on { opacity: 0.15; }
+
+/* ====== ОКНА ====== */
+#goal-complete { position: fixed; inset: 0; z-index: 200; display: none; align-items: center; justify-content: center; background: rgba(3, 5, 9, 0.9); opacity: 0; transition: 0.4s; }
+#goal-complete.active { display: flex; }
+#goal-complete.visible { opacity: 1; }
+.goal-complete-box { background: rgba(13, 18, 30, 0.98); border: 3px solid #00f3ff; padding: 35px 45px; text-align: center; }
+.goal-complete-icon { font-size: 64px; margin-bottom: 15px; }
+.goal-complete-title { font-size: 16px; color: #00f3ff; margin-bottom: 15px; }
+.goal-complete-text { font-size: 9px; color: #b0b0d0; margin-bottom: 20px; line-height: 1.8; }
+.goal-complete-reward { font-size: 12px; color: #ffcc00; background: rgba(255, 204, 0, 0.1); border: 2px solid #ffcc00; padding: 10px; margin-bottom: 25px; }
+
+#upgrades-scene { position: fixed; inset: 0; z-index: 60; display: none; flex-direction: column; align-items: center; padding: 30px 20px 100px; background: rgba(3, 5, 9, 0.98); opacity: 0; transition: 0.5s; overflow-y: auto; }
+#upgrades-scene.active { display: flex; }
+#upgrades-scene.visible { opacity: 1; }
+.upgrades-title { font-size: 16px; color: #00f3ff; margin-bottom: 15px; }
+.upgrades-balance { font-size: 14px; color: #ffcc00; margin-bottom: 20px; text-align: center; }
+.upgrades-list { width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.upgrade-card { display: flex; align-items: center; gap: 12px; background: rgba(13, 18, 30, 0.95); border: 3px solid #7c3aed; padding: 12px; cursor: pointer; box-shadow: 4px 4px 0 #000; }
+.upgrade-card:hover { background: rgba(124, 58, 237, 0.2); transform: translate(-2px, -2px); }
+.upgrade-card.locked { opacity: 0.5; cursor: not-allowed; }
+.upgrade-icon { font-size: 36px; min-width: 45px; }
+.upgrade-info { flex: 1; text-align: left; }
+.upgrade-name { font-size: 10px; color: #fff; margin-bottom: 5px; }
+.upgrade-desc { font-size: 7px; color: #b0b0d0; margin-bottom: 5px; }
+.upgrade-price { font-size: 9px; color: #ffcc00; text-align: right; }
+.upgrade-price.cant-afford { color: #ff4444; }
+.upgrade-price.maxed { color: #00ff66; }
+
+/* ====== ЭКРАН ДИРЕКТОРА ====== */
+#director-scene {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 20px 20px 30px;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  overflow: hidden;
+}
+
+#director-scene.active { display: flex; }
+#director-scene.visible { opacity: 1; }
+
+.director-bg {
+  position: absolute;
+  inset: -30px;
+  background-image: url('assets/director.png');
+  background-size: cover;
+  background-position: center;
+  image-rendering: pixelated;
+  z-index: 0;
+  transition: background-image 0.4s ease;
+}
+
+/* ✅ Директор дышит */
+#director-scene.visible .director-bg {
+  animation: sceneBreathe 4s ease-in-out infinite;
+}
+
+.director-bg.after {
+  background-image: url('assets/director_after.png');
+}
+
+.director-info {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 600px;
+}
+
+/* ✅ Инфо-блок тоже дышит */
+#director-scene.visible .director-info {
+  animation: sceneBreathe 4s ease-in-out infinite;
+}
+
+.director-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 12px;
+  color: #00f3ff;
+  text-shadow: 3px 3px 0 #000, 0 0 15px #00f3ff;
+  padding: 8px 20px;
+  background: rgba(3, 5, 9, 0.9);
+  border: 2px solid #00f3ff;
+}
+
+.director-text {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: #fff;
+  text-align: center;
+  line-height: 2;
+  padding: 15px 25px;
+  background: rgba(3, 5, 9, 0.85);
+  border: 3px solid #7c3aed;
+  width: 100%;
+}
+
+.director-total {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 18px;
+  color: #ffcc00;
+  text-shadow: 3px 3px 0 #000, 0 0 20px rgba(255, 204, 0, 0.8);
+  padding: 12px 25px;
+  background: rgba(3, 5, 9, 0.9);
+  border: 3px solid #ffcc00;
+}
+
+#director-scene .btn {
+  font-size: 12px;
+  padding: 20px 40px;
+}
+
+#director-btn.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ====== ЗАСТАВКА: ЕДЕМ НА МОЙКУ ====== */
+#cutscene {
+  position: fixed; inset: 0; z-index: 300; display: none;
+  background: #000; opacity: 0; transition: opacity 0.8s ease; overflow: hidden;
+}
+#cutscene.active { display: block; }
+#cutscene.visible { opacity: 1; }
+
+#cutscene-shake {
+  position: absolute; inset: -30px;
+  animation: driveShake 0.22s steps(2) infinite;
+}
+#cutscene-img {
+  width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; display: block;
+  transform-origin: 50% 55%;
+  animation: driveZoom 5s ease-in forwards;
+  transition: opacity 1s ease;
+}
+#cutscene.black #cutscene-img { opacity: 0; }
+
+@keyframes driveZoom { from { transform: scale(1); } to { transform: scale(1.14); } }
+@keyframes driveShake {
+  0%   { transform: translate(0, 0); }
+  50%  { transform: translate(2px, -2px); }
+  100% { transform: translate(-2px, 1px); }
+}
+
+#cutscene-skip {
+  position: absolute; right: 16px; bottom: 16px; z-index: 2;
+}
+
+/* ============================================================
+   ВЕТКА «ПРОГРАММИСТ»: ФРИЛАНС → ОФИС → СВОЙ ПРОДУКТ
+   ============================================================ */
+
+/* ====== МИНИ-ИГРА «ФРИЛАНС» ====== */
+#mg-freelance {
+  position: fixed; inset: 0; z-index: 20; display: none; flex-direction: column;
+  background-image: url('assets/bg_freelance.png');
+  background-size: cover; background-position: center; image-rendering: pixelated;
+  opacity: 0; transition: opacity 0.8s ease;
+}
+#mg-freelance.active { display: flex; }
+#mg-freelance.visible { opacity: 1; }
+
+#fl-field { flex: 1; position: relative; overflow: hidden; }
+
+/* Зона экрана ноутбука. Если на твоей картинке экран в другом месте —
+   двигай эти четыре числа (top/left/width/height), больше ничего не надо. */
+#fl-screen {
+  position: absolute;
+  top: 26%; left: 13%; width: 74%; height: 36%;
+  background: #0a0f16;
+  border: 3px solid #7c3aed;
+  box-shadow: inset 0 0 60px rgba(0, 243, 255, 0.15), 0 0 40px rgba(124, 58, 237, 0.5);
+  overflow: hidden;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+#fl-screen::before {   /* блик на стекле */
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(115deg, rgba(255,255,255,0.05) 0%, transparent 40%);
+}
+#fl-code {
+  height: 100%; overflow: hidden; text-align: left;
+  font-size: 9px; line-height: 1.9; color: #9ef7ff;
+  text-shadow: 0 0 6px rgba(0, 243, 255, 0.6);
+}
+.code-line { display: block; white-space: nowrap; }
+.code-line .ln { color: #4a3f7a; margin-right: 8px; font-size: 8px; }
+.code-line .word { margin-right: 7px; animation: wordType 0.18s ease-out; }
+.code-line .word:nth-child(2n) { color: #ffcc00; }
+.code-line .word:nth-child(3n) { color: #00ff66; }
+@keyframes wordType {
+  0%   { opacity: 0; transform: translateX(-4px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+.code-cursor {
+  position: absolute; bottom: 12px; left: 14px;
+  width: 7px; height: 11px; background: #00f3ff;
+  animation: cursorBlink 0.8s steps(1) infinite;
+}
+@keyframes cursorBlink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+
+.fl-hint {
+  position: absolute; top: 12%; left: 50%; transform: translateX(-50%);
+  color: #ffcc00; font-size: 10px; text-align: center; z-index: 5;
+  text-shadow: 2px 2px 0 #000, 0 0 15px rgba(255, 204, 0, 0.8);
+  animation: hintPulse 1.5s ease-in-out infinite;
+}
+
+.fl-progress {
+  position: absolute; bottom: 12%; left: 50%; transform: translateX(-50%);
+  width: 60%; max-width: 460px; height: 14px;
+  background: rgba(3, 5, 9, 0.85); border: 3px solid #7c3aed;
+}
+.fl-progress-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, #7c3aed, #00f3ff);
+  transition: width 0.15s ease;
+}
+.fl-count {
+  position: absolute; bottom: 6%; left: 50%; transform: translateX(-50%);
+  font-size: 11px; color: #00f3ff; text-shadow: 2px 2px 0 #000;
+}
+
+/* ====== МИНИ-ИГРА «ОФИС» ====== */
+#mg-office {
+  position: fixed; inset: 0; z-index: 20; display: none; flex-direction: column;
+  background-image: url('assets/bg_office.png');
+  background-size: cover; background-position: center; image-rendering: pixelated;
+  opacity: 0; transition: opacity 0.8s ease;
+}
+#mg-office.active { display: flex; }
+#mg-office.visible { opacity: 1; }
+
+#of-field { flex: 1; position: relative; overflow: hidden; }
+
+/* Экран монитора — двигай под свою картинку так же, как у фриланса */
+#of-screen {
+  position: absolute;
+  top: 22%; left: 12%; width: 76%; height: 46%;
+  background: #0a0f16; border: 3px solid #7c3aed;
+  box-shadow: inset 0 0 60px rgba(255, 60, 60, 0.08), 0 0 40px rgba(124, 58, 237, 0.5);
+  overflow: hidden; padding: 12px 14px;
+}
+#of-code {
+  height: 100%; overflow: hidden; text-align: left;
+  font-size: 9px; line-height: 1.9; color: #8ce0ff;
+}
+#of-code .bad { color: #ff5555; text-shadow: 0 0 8px rgba(255, 60, 60, 0.8); }
+
+.of-hint {
+  position: absolute; top: 9%; left: 50%; transform: translateX(-50%);
+  color: #ff5555; font-size: 10px; text-align: center; z-index: 5;
+  text-shadow: 2px 2px 0 #000, 0 0 15px rgba(255, 60, 60, 0.8);
+  animation: hintPulse 1.5s ease-in-out infinite;
+}
+
+/* БАГ — кликабельный жук поверх кода */
+.bug {
+  position: absolute; width: 54px; height: 54px; z-index: 14;
+  cursor: pointer; pointer-events: auto;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 30px;
+  filter: drop-shadow(0 0 10px rgba(255, 60, 60, 0.9));
+  animation: bugCrawl 2s ease-in-out infinite alternate;
+  transition: transform 0.12s;
+  image-rendering: pixelated;
+}
+.bug img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; image-rendering: pixelated; }
+.bug:hover { filter: drop-shadow(0 0 18px rgba(255, 204, 0, 0.95)); }
+.bug:active { transform: scale(0.85); }
+.bug.fixed { animation: bugFixed 0.25s forwards; }
+@keyframes bugCrawl {
+  0%   { transform: translate(0, 0) rotate(-6deg); }
+  100% { transform: translate(10px, -8px) rotate(6deg); }
+}
+@keyframes bugFixed {
+  0%   { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.8); opacity: 0; filter: drop-shadow(0 0 20px #00ff66); }
+}
+
+/* ====== HUD ПРОДУКТА ====== */
+#product-panel {
+  position: fixed; top: 15px; left: 15px; z-index: 56; display: none;
+  background: rgba(3, 5, 9, 0.9); border: 2px solid #00ff66;
+  padding: 10px 16px; font-size: 9px; line-height: 2; color: #00ff66;
+  text-shadow: 0 0 10px rgba(0, 255, 102, 0.6); text-align: left;
+}
+
+/* Кнопка «релиз готов» — пульсирует */
+.btn.ready {
+  background: #00ff66; color: #000;
+  animation: readyPulse 0.8s ease-in-out infinite;
+}
+@keyframes readyPulse {
+  0%, 100% { box-shadow: 4px 4px 0 #000, 0 0 0 rgba(0, 255, 102, 0.7); }
+  50%      { box-shadow: 4px 4px 0 #000, 0 0 25px rgba(0, 255, 102, 0.9); }
+}
+
+/* ====== ЭКРАН ЗАКАЗЧИКА / ТИМЛИДА ====== */
+#boss-scene {
+  position: fixed; inset: 0; z-index: 100; display: none;
+  flex-direction: column; align-items: center; justify-content: flex-end;
+  padding: 20px 20px 30px; opacity: 0; transition: opacity 0.6s ease; overflow: hidden;
+}
+#boss-scene.active { display: flex; }
+#boss-scene.visible { opacity: 1; }
+
+.boss-bg {
+  position: absolute; inset: -30px;
+  background-size: cover; background-position: center;
+  image-rendering: pixelated; z-index: 0;
+  background-color: #0a0f16;
+}
+#boss-scene.visible .boss-bg { animation: sceneBreathe 4s ease-in-out infinite; }
+
+.boss-info {
+  position: relative; z-index: 5; display: flex; flex-direction: column;
+  align-items: center; gap: 12px; width: 100%; max-width: 600px;
+}
+#boss-scene.visible .boss-info { animation: sceneBreathe 4s ease-in-out infinite; }
+
+.boss-title {
+  font-size: 12px; color: #00f3ff; padding: 8px 20px;
+  text-shadow: 3px 3px 0 #000, 0 0 15px #00f3ff;
+  background: rgba(3, 5, 9, 0.9); border: 2px solid #00f3ff;
+}
+.boss-text {
+  font-size: 10px; color: #fff; text-align: center; line-height: 2;
+  padding: 15px 25px; background: rgba(3, 5, 9, 0.85);
+  border: 3px solid #7c3aed; width: 100%;
+}
+.boss-total {
+  font-size: 18px; color: #ffcc00; padding: 12px 25px;
+  text-shadow: 3px 3px 0 #000, 0 0 20px rgba(255, 204, 0, 0.8);
+  background: rgba(3, 5, 9, 0.9); border: 3px solid #ffcc00;
+}
+#boss-scene .btn { font-size: 12px; padding: 20px 40px; }
+#boss-btn.hidden { opacity: 0; pointer-events: none; }
+
+/* ====== АДАПТИВ ПОД ТЕЛЕФОН ====== */
+@media (max-width: 600px) {
+  #fl-code, #of-code { font-size: 7px; line-height: 2.1; }
+  #fl-screen, #of-screen { height: 32%; }
+  .fl-progress { width: 80%; }
+  .bug { width: 46px; height: 46px; font-size: 26px; }
+}
